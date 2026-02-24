@@ -59,8 +59,8 @@ k = 3 # calculating G6
 dw = 1.25
 
 # for drawing the mountains, use these, which get close:
-db = .001
-da = .0005
+db = .01
+da = .001
 terms = 5
 k = 3
 
@@ -143,7 +143,7 @@ data = data - np.min(data)
 data = data / np.max(data)
 
 plt.ion()
-plt.plot(10*np.log10(data)) # very cool
+plt.plot(10*np.log10(data[:,0:40])) # very cool
 bgr = data_to_bgr(data) # TODO - why doesn't this work?
 #bgr = data_to_bgr(np.real(GG))
 img[yi.T,xi.T,:] = bgr
