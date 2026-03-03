@@ -143,13 +143,48 @@ data = data - np.min(data)
 data = data / np.max(data)
 
 plt.ion()
-plt.plot(10*np.log10(data[:,0:40])) # very cool
+x = 10*np.log10(data[:,0:35])
+fig,ax = plt.subplots()
+ax.plot(x)# very cool
 bgr = data_to_bgr(data) # TODO - why doesn't this work?
 #bgr = data_to_bgr(np.real(GG))
 img[yi.T,xi.T,:] = bgr
 img[yi_neg.T,xi.T,:] = bgr # exploit the symmetry
         
 cv2.imshow('real(G6)',img)
+
+import time
+frame = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
+worldlims = [ax.get_xlim(), ax.get_ylim()]
+x_ = np.arange(0,x.shape[0])
+clrs = [(0,255,0),
+        (255,0,0),
+        (0,0,255),
+        (52, 113, 235),
+        (235, 52, 208),
+        (52,235,235),
+        (220,252,8)]
+iclr = 0
+for icol in range(x.shape[1]):
+    data = x[:,icol]
+    i_inf = np.nonzero(np.isinf(data))[0]
+    i_not_inf = np.nonzero(~np.isinf(data))[0]
+    x__ = x_[i_not_inf]
+    xi = world_coords_to_img_coords(x__,imsize[0],worldlims[0],invert=False)
+    yi = world_coords_to_img_coords(data[i_not_inf],imsize[1],worldlims[1],invert=True)
+    """
+    frame[yi,xi,:] = clrs[iclr]
+    iclr += 1
+    if iclr >= len(clrs):
+        iclr = 0
+    """
+    clr = x.shape[1] + 40
+    frame[yi,xi,:] = clr
+
+fname = 'mountains_%d.png' % (time.time())
+cv2.imwrite(fname,frame)
+
+cv2.imshow('mountains',frame)
 cv2.waitKey(0)
 
 """

@@ -40,7 +40,8 @@ class Viewer:
                     'B': [self.increment_b, 'increment db'],
                     't': [self.decrement_terms, 'decrement terms'],
                     'T': [self.increment_terms, 'increment terms'],
-                    'c': [self.draw_cv, 'draw current figure with opencv']
+                    'c': [self.draw_cv, 'draw current figure with opencv'],
+                    's': [self.save_img, 'save current image']
                    }
         if event.key == '?':
             for k in bindings:
@@ -112,6 +113,11 @@ class Viewer:
         x = pickleLoad(self.dr + '/' + self.files[self.iFile])
         cv2.imshow('img',x)
         cv2.waitKey(1)
+    
+    def save_img(self):
+        x = pickleLoad(self.dr + '/' + self.files[self.iFile])
+        cv2.imwrite(self.files[self.iFile] + '.png', x)
+    
 #name_str = '__weierstrass_da_%.05f_db_%.05f_terms_%03d_k_%02d_dw_%.03f_imsize_%d_%d.pkl'
 
 
