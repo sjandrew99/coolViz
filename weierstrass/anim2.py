@@ -59,7 +59,6 @@ def gen_grid_background(dx=100,dy=200):
 def get_frame(da_, db_, terms_):
     idx = np.nonzero((DA == da_)*(DB==db_)*(TERMS==terms_))[0]
     if len(idx) != 1:
-        #import pdb; pdb.set_trace()
         assert False
         #sys.exit(1)
     frame = pickleLoad(dr + '/' + files[idx[0]])
@@ -106,8 +105,8 @@ for t in uterms:
     #import pdb; pdb.set_trace()
     idx = np.nonzero(TERMS == t)[0]
     
-    da_ = np.sort(np.unique(DA[idx]))
-    db_ = np.sort(np.unique(DB[idx]))
+    da_ = np.sort(np.unique(DA[idx])) 
+    db_ = np.sort(np.unique(DB[idx])) # note - a and b may not have these values at the same times!
     aname=f'da_terms_{t}'
     bname=f'db_terms_{t}'
     pdict[aname] = ParamStepperDesigner(da_, name=aname).params
@@ -127,13 +126,18 @@ while 1:
     bname = f'db_terms_{terms_}'
     while 1:
         if da_ == np.max(params.params[aname]): break
-        #import pdb; pdb.set_trace()
+        iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
+        if not(db_ in DB[iThisRow]):
+            db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
         da_ = params.update(aname)
     # max a, min b.
     while 1:
         if db_ == np.max(params.params[bname]): break
+        iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
+        if not(da_ in DA[iThisRow]):
+            da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
         db_ = params.update(bname)
@@ -163,11 +167,17 @@ while 1:
     # back to highest res for loop
     while 1:
         if da_ == np.min(params.params[aname]): break
+        iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
+        if not(db_ in DB[iThisRow]):
+            db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
         da_ = params.update(aname)
     while 1:
         if db_ == np.min(params.params[bname]): break
+        iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
+        if not(da_ in DA[iThisRow]):
+            da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
         db_ = params.update(bname)    
