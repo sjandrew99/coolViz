@@ -59,7 +59,7 @@ def gen_grid_background(dx=100,dy=200):
 def get_frame(da_, db_, terms_):
     idx = np.nonzero((da == da_)*(db==db_)*(terms==terms_))[0]
     if len(idx) != 1:
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         assert False
         #sys.exit(1)
     frame = pickleLoad(dr + '/' + files[idx[0]])
@@ -97,7 +97,7 @@ terms = np.array([int(i.split('_')[8]) for i in files])
 uterms = np.unique(terms)
 
 pscale = ParamStepperDesigner(.5, 1.8, 100, 'scale')
-ptheta = ParamStepperDesigner(0,360, 3600, 'theta')
+ptheta = ParamStepperDesigner(0,360, 3600, 'theta',type='upramp')
 pdx = ParamStepperDesigner(10,200,190,'dx')
 pdy = ParamStepperDesigner(10,200,190,'dy')
 pterms = ParamStepperDesigner(np.min(terms),np.max(terms),len(uterms),'terms')
@@ -158,8 +158,7 @@ while 1:
         frame = rotate(frame, params.no_update('theta'), params.no_update('scale')); # TODO - continue rotate/scale throughout interp 
         background = gen_grid_background(params.update('dx'),params.update('dy'))
         frame = background + frame
-        cv2.imshow('img',frame)
-        cv2.waitKey(delay)
+        imshow(frame,delay)
     #print('done interpolating')
     # back to highest res for loop
     while 1:
