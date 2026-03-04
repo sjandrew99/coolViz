@@ -103,6 +103,7 @@ pterms = ParamStepperDesigner(np.min(uterms),np.max(uterms),len(uterms),'terms')
 pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.params,'terms':uterms}
 # different da/db lists for each term
 for t in uterms:
+    #import pdb; pdb.set_trace()
     idx = np.nonzero(TERMS == t)[0]
     da_ = np.sort(np.unique(DA[idx]))
     db_ = np.sort(np.unique(DB[idx]))
@@ -146,10 +147,8 @@ while 1:
     lastframe = get_frame(da_,db_,terms_)
     terms_ = params.update('terms')
     
-    aname = f'da_terms_{terms_}_down'
-    bname = f'db_terms_{terms_}_down'
-    da_ = params.update(aname)
-    db_ = params.update(bname)
+    #da_ = params.update(aname)
+    #db_ = params.update(bname)
     
     newframe = get_frame(da_,db_,terms_)
     #print(f'turnaround, terms = {viewer.terms[viewer.iFile]}')
