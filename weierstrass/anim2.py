@@ -105,18 +105,13 @@ pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.p
 for t in uterms:
     #import pdb; pdb.set_trace()
     idx = np.nonzero(TERMS == t)[0]
+    
     da_ = np.sort(np.unique(DA[idx]))
     db_ = np.sort(np.unique(DB[idx]))
     aname=f'da_terms_{t}'
     bname=f'db_terms_{t}'
     pdict[aname] = ParamStepperDesigner(da_, name=aname).params
     pdict[bname] = ParamStepperDesigner(db_, name=bname).params
-    """
-    pdict[aname] = da_
-    pdict[bname] = db_
-    pdict[aname+'_down'] = np.flipud(da_)
-    pdict[bname+'_down'] = np.flipud(db_)
-    """
 params = ParamStepper(pdict)
 
 terms_ = params.update('terms')
