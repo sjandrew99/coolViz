@@ -57,9 +57,9 @@ def gen_grid_background(dx=100,dy=200):
     return background
 
 def get_frame(da_, db_, terms_):
-    idx = np.nonzero((da == da_)*(db==db_)*(terms==terms_))[0]
+    idx = np.nonzero((DA == da_)*(DB==db_)*(TERMS==terms_))[0]
     if len(idx) != 1:
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         assert False
         #sys.exit(1)
     frame = pickleLoad(dr + '/' + files[idx[0]])
@@ -90,51 +90,57 @@ files = [i for i in os.listdir(dr) if i.endswith('.pkl')]
 files.sort()
 frame = pickleLoad(dr + '/' + files[0])
 imsize = (frame.shape[1],frame.shape[0])
-da = np.array([float(i.split('_')[4]) for i in files])
-db = np.array([float(i.split('_')[6]) for i in files])
-terms = np.array([int(i.split('_')[8]) for i in files])
+DA = np.array([float(i.split('_')[4]) for i in files])
+DB = np.array([float(i.split('_')[6]) for i in files])
+TERMS = np.array([int(i.split('_')[8]) for i in files])
 
-uterms = np.unique(terms)
-
+uterms = np.unique(TERMS)
 pscale = ParamStepperDesigner(.5, 1.8, 100, 'scale')
-ptheta = ParamStepperDesigner(0,360, 3600, 'theta',type='upramp')
+ptheta = ParamStepperDesigner(0,360, 3600, 'theta',waveform='upramp')
 pdx = ParamStepperDesigner(10,200,190,'dx')
 pdy = ParamStepperDesigner(10,200,190,'dy')
-pterms = ParamStepperDesigner(np.min(terms),np.max(terms),len(uterms),'terms')
-pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.params,'terms':terms}
+pterms = ParamStepperDesigner(np.min(uterms),np.max(uterms),len(uterms),'terms')
+pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.params,'terms':uterms}
 # different da/db lists for each term
 for t in uterms:
-    idx = np.nonzero(terms == t)[0]
-    da_ = np.sort(np.unique(da[idx]))
-    db_ = np.sort(np.unique(db[idx]))
+    idx = np.nonzero(TERMS == t)[0]
+    da_ = np.sort(np.unique(DA[idx]))
+    db_ = np.sort(np.unique(DB[idx]))
     aname=f'da_terms_{t}'
     bname=f'db_terms_{t}'
-    #pa = ParamStepperDesigner(np.min(da_), np.max(da_), len(da_), name=aname)
-    #pb = ParamStepperDesigner(np.min(da_), np.max(da_), len(da_), name=bname)
+    pdict[aname] = ParamStepperDesigner(da_, name=aname).params
+    pdict[bname] = ParamStepperDesigner(db_, name=bname).params
+    """
     pdict[aname] = da_
     pdict[bname] = db_
     pdict[aname+'_down'] = np.flipud(da_)
     pdict[bname+'_down'] = np.flipud(db_)
+    """
 params = ParamStepper(pdict)
 
 terms_ = params.update('terms')
-db_ = params.update(f'db_terms_{terms_}')
+aname = f'da_terms_{terms_}'
+bname = f'db_terms_{terms_}'
+da_ = params.update(aname)
+db_ = params.update(bname)
+
 while 1:
     
     # min a, min b. highest res
     aname = f'da_terms_{terms_}'
     bname = f'db_terms_{terms_}'
     while 1:
-        da_ = params.update(aname)
         if da_ == np.max(params.params[aname]): break
+        #import pdb; pdb.set_trace()
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
+        da_ = params.update(aname)
     # max a, min b.
     while 1:
-        db_ = params.update(bname)
         if db_ == np.max(params.params[bname]): break
         frame = get_frame_and_background(da_,db_,terms_)
         imshow(frame,delay)
+        db_ = params.update(bname)
 
     # max a, max b. lowest res
     lastframe = get_frame(da_,db_,terms_)
