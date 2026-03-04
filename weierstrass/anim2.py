@@ -77,11 +77,6 @@ def imshow(frame,delay):
 # da: theta resolution
 # db: radial resolution    
 
-
-
-
-#viewer = Viewer()
-# da, db, terms
 delay = 10
 
 dr = 'precomp'
@@ -94,7 +89,7 @@ DB = np.array([float(i.split('_')[6]) for i in files])
 TERMS = np.array([int(i.split('_')[8]) for i in files])
 
 uterms = np.unique(TERMS)
-pscale = ParamStepperDesigner(.5, 1.8, 100, 'scale')
+pscale = ParamStepperDesigner(.5, 1.8, 200, 'scale')
 ptheta = ParamStepperDesigner(0,360, 3600, 'theta',waveform='upramp')
 pdx = ParamStepperDesigner(10,200,190,'dx')
 pdy = ParamStepperDesigner(10,200,190,'dy')
@@ -155,11 +150,11 @@ while 1:
     # interpolate between frame and newframe:
     lastframe = lastframe.astype(np.float32) # use floating point for increased dynamic range and resolution
     dframe = newframe.astype(np.float32) - lastframe
-    nSteps = 15
+    nSteps = 50
     dpx = dframe / nSteps
     for step in range(0, nSteps):
         frame = (lastframe + dpx*(step+1)).astype(np.uint8)
-        frame = rotate(frame, params.no_update('theta'), params.no_update('scale')); # TODO - continue rotate/scale throughout interp 
+        frame = rotate(frame, params.update('theta'), params.update('scale')); # TODO - continue rotate/scale throughout interp 
         background = gen_grid_background(params.update('dx'),params.update('dy'))
         frame = background + frame
         imshow(frame,delay)
