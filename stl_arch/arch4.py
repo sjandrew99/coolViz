@@ -9,7 +9,7 @@ np.random.seed(0)
 from scipy.signal import get_window
 #https://www.ams.org/notices/201002/rtx100200220p.pdf
 arch_depth = 400 # ft
-arch_dx = 1.5
+arch_dx = .5
 A = 68.7672; B = 0.0100333
 halfwidth = 299.2239
 
@@ -50,10 +50,10 @@ def imshow(frame,delay):
     cv2.imshow('img',frame)
     cv2.waitKey(delay)
 
-delay = 10
+delay = 1
 
 imsize = (800, 800)
-
+#imsize = (1920, 1080)
 # worldlims are north, up
 vertices = np.concatenate((P1,P2,P3),axis=1) # 3 x N. P1[k] = vertices[:,k]. P2[k] = vertices[:,k+N], etc
                                              # P1[k] on the southern half is P1[-(k+1)] on the northern half
@@ -139,9 +139,14 @@ loop_count = 0
 fps = 30
 vidname = f'arch_{imsize[0]}_{imsize[1]}.mp4'
 writer = cv2.VideoWriter(vidname,cv2.VideoWriter_fourcc('M','P','4','V'), fps, imsize)
+# background - gradient from black at bottom to gray at top. gives everything some texture
+bgcolor = np.linspace(128,0, imsize[1]).astype(np.uint8)
+background = np.repeat(np.repeat(bgcolor[:,None], 3,axis=1)[:,None], imsize[0],axis=1)
+
 while 1:
 
     frame = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
+    
     # render one river frame:    
     win_stddev = winStddevCycle.next()
     window = get_window(('gaussian',win_stddev*len(river_x)),len(river_x)) # std-dev is measured in samples
@@ -210,8 +215,12 @@ while 1:
             cv2.line(archframe, (Xi[iTop+nTri], Yi[iTop+nTri]), (Xi[iTop+1+nTri], Yi[iTop+1+nTri]), (255,255,255), 1, cv2.LINE_AA)
             cv2.line(archframe, (Xi[iTop+2*nTri], Yi[iTop+2*nTri]), (Xi[iTop+1+2*nTri], Yi[iTop+1+2*nTri]), (255,255,255), 1, cv2.LINE_AA)
             
-            
-    imshow(frame+archframe,delay)
+    frame = frame + archframe
+    # add background, only to uncolored pixels:
+    idx = np.nonzero(frame == 0)
+    frame[idx[0],idx[1],idx[2]] = background[idx[0],idx[1],idx[2]]
+    #imshow(frame+archframe,delay)
+    imshow(frame,delay)
     writer.write(frame+archframe)
     if not build_arch:
        iArch += 1
