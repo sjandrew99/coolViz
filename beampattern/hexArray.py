@@ -8,6 +8,8 @@ from copy import deepcopy
 from coolViz.collision_detection import detect_border_collision
 from coolViz.cmapStepper import CmapStepper
 from coolViz.imMixer import FixedVignette2
+from tqdm import tqdm
+from coolViz.barrel_shifter import BarrelShifter
 #plt.ion()
 #np.random.seed(0)
 
@@ -50,7 +52,7 @@ class HexagonalArray:
 
         lamda = speed_of_light / f0
         self.lamda = lamda
-        grid_spacing = .01
+        grid_spacing = .01 # decreasing this doesn't result in a finer image because there's a resize
         u = np.arange(-1,1,grid_spacing)
         v = np.arange(-1,1,grid_spacing)
         grid = np.meshgrid(u,v)
@@ -83,6 +85,7 @@ class HexagonalArray:
         self.istep = 0
         self.return_to_center = 0
         self.k = -2*np.pi * np.array([grid[0],grid[1]]) / lamda
+        self.max_log_response = BarrelShifter(100)
 
         self.cap = None
         self.nFramesPreComp = 0
@@ -189,7 +192,11 @@ class HexagonalArray:
         #tComp = timer() - st
         #print('%.1f ms to compute response' % (tComp * 1000))
         #x = np.abs(response); x = 2**(x/2); x = np.abs(x) / np.max(np.abs(x))
-        #x = 20*np.log10(np.abs(response)); x = x - np.min(x); x = x / np.max(x); # log space looks cool but it shakes a lot, idk why
+        
+        #x = 20*np.log10(np.abs(response)); x = x - np.min(x); 
+        #self.max_log_response.push(np.nanmax(x)); x = x / np.mean(self.max_log_response.queue);
+        #x = x / np.max(x); # log space looks cool but it shakes a lot, idk why. probably because i'm normalizing by a different # each time
+        
         x = np.abs(response) / np.max(np.abs(response))
         bgr = data_to_bgr(x)
         bgr = cv2.resize(bgr,(imsize[0],imsize[1]),interpolation=cv2.INTER_CUBIC)
@@ -228,19 +235,22 @@ if __name__=="__main__":
     maxFrames = args.nloops*(array.Nstep * array.Nstep_mult + array.Nstep_to_return - 1) + 1
     if args.record:
         writer = cv2.VideoWriter(args.record,cv2.VideoWriter_fourcc('M','P','4','V'),30,imsize)
+    pbar = tqdm(total=maxFrames)
     while frameCount < maxFrames:
-         array.update()
-         response = array.calc_and_draw_response(imsize)
-         response = response + cmap_stepper.counter
-         cmap_stepper.update()
-         if mixer is not None:
-             response = mixer.mix(response, foreground)
-         cv2.imshow('img',response)
-         cv2.imshow('array',array.draw_array(imsize))
-         cv2.waitKey(1)
-         frameCount += 1
-         if args.record:
-             writer.write(response)
+        array.update()
+        response = array.calc_and_draw_response(imsize)
+        response = response + cmap_stepper.counter
+        cmap_stepper.update()
+        if mixer is not None:
+            response = mixer.mix(response, foreground)
+        cv2.imshow('img',response)
+        cv2.imshow('array',array.draw_array(imsize))
+        cv2.waitKey(1)
+        frameCount += 1
+        if args.record:
+            writer.write(response)
+        pbar.update(1)#frameCount)
+    pbar.close()
     if args.record:
         writer.release()
                       
