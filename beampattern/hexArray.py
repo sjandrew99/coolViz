@@ -44,9 +44,9 @@ class HexagonalArray:
         f0 = 1e9 # Hz
         self.N_elements = 7
         #self.Nstep = 1000
-        self.Nstep = 100
+        self.Nstep = 200
         self.Nstep_mult=2 # ratio of how long elements can move randomly to how often they return to center
-        self.Nstep_to_return = int(self.Nstep/5)
+        self.Nstep_to_return = int(self.Nstep/3)
 
         lamda = speed_of_light / f0
         self.lamda = lamda
