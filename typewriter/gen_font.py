@@ -504,6 +504,31 @@ def glyph7():
             {'points': points, 'type':'outer'}]}
     return glyph    
 
+def glyphQuestion():
+    fullheight =1; fullwidth = 1
+    dotsize = .1
+    # dot is a n-agon, centered in x
+    n = 7
+    dth = 2*np.pi / n
+    th = np.arange(0,2*np.pi,dth)
+    x = dotsize * np.cos(th) + fullheight/2
+    y = dotsize * np.sin(th) + fullwidth - dotsize
+    dotpoints = []
+    for i in range(0,n):
+        dotpoints.append([x[i],y[i]])
+    width = .2
+    qpoints = [[fullwidth/2, fullheight-dotsize*3], [fullheight/2 - width/2, fullheight-dotsize*3 - width], [fullheight/2, fullheight-dotsize*3-width*2]]
+    qpoints.append([fullwidth/2, fullheight-dotsize*3-width*3])
+    qpoints.append([fullwidth/2 - width, fullheight-dotsize*3-width*3])
+    qpoints.append([fullwidth/2 - width, 0])
+    qpoints.append([fullwidth/2 + width/2, 0])
+    qpoints.append([fullwidth/2 + width/2, qpoints[2][1]])
+    #qpoints.append([qpoints[2][0]+2*width, qpoints[2][1]])
+    glyph = {'curves' : [{'points': dotpoints, 'type' : 'outer'},
+                         {'points': qpoints, 'type' : 'outer'}]}
+    return glyph
+    
+
 letters['A'] = glyphA()
 letters['B'] = glyphB()
 letters['C'] = glyphC()
@@ -535,16 +560,17 @@ letters['1'] = glyph1()
 letters['4'] = glyph4()
 letters['5'] = glyph5()
 letters['7'] = glyph7()
+letters['?'] = glyphQuestion()
 
 if __name__ == "__main__":
     imsize = (900, 800)    
     """
     frame = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
-    renderGlyph(frame, letters['4'], fillcolor=(255,0,0))
-    #renderGlyph(frame, letters['4'], closed=False)
+    renderGlyph(frame, letters['?'], fillcolor=(255,0,0))
+    #renderGlyph(frame, letters['?'], closed=False)
     cv2.imshow('stuff',frame)
-    cv2.waitKey(1000)
-    #sys.exit(1)
+    cv2.waitKey(0)
+    sys.exit(1)
     while 1:
         for k in letters:
             frame = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
@@ -557,7 +583,7 @@ if __name__ == "__main__":
     render_string(frame,string)
     cv2.imshow('render string',frame)
     #cv2.waitKey(0)
-    string = 'The quick red fox jumped over the lazy brown dog'
+    string = 'The quick red fox jumped over the lazy brown dog. Punctuation and numbers. 1 4 5 7 ?'
     frame = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
     render_string_wordwrapped(frame, string)
     cv2.imshow('wordwrap',frame)
