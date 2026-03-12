@@ -55,7 +55,7 @@ def julia_set(h_range, w_range, max_iterations,a = -0.744 + 0.148j):
         diverging = z_mag_arr > 4
         diverging_now = diverging & not_already_diverged
         iterations_till_divergence[diverging_now] = i
-        not_already_diverged = np.invert(diverging_now) & not_already_diverged
+        not_already_diverged = xp.invert(diverging_now) & not_already_diverged
         diverged_in_past = diverged_in_past | diverging_now
         z_array[diverged_in_past] = 0
     
