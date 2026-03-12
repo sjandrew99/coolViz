@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 
 # https://blbadger.github.io/julia-sets.html
+# TODO - reduce color banding: https://en.wikipedia.org/wiki/Julia_set#Pseudocode_for_multi-Julia_sets
 import numpy as np
+try:
+    import cupy as xp
+    using_cuda = 1
+except:
+    
+    using_cuda = 0
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import cv2
@@ -25,12 +32,12 @@ def julia_set(h_range, w_range, max_iterations,a = -0.744 + 0.148j):
     the number of the last bounded iteration at each array value.
     '''
     # top left to bottom right
-    y, x = np.ogrid[1.4: -1.4: h_range*1j, -1.4: 1.4: w_range*1j]
+    y, x = xp.ogrid[1.4: -1.4: h_range*1j, -1.4: 1.4: w_range*1j]
     z_array = x + y*1j
     #a = -0.744 + 0.148j
-    iterations_till_divergence = max_iterations + np.zeros(z_array.shape)
-    not_already_diverged = np.ones(z_array.shape).astype(bool)
-    diverged_in_past = np.zeros(z_array.shape).astype(bool)
+    iterations_till_divergence = max_iterations + xp.zeros(z_array.shape)
+    not_already_diverged = xp.ones(z_array.shape).astype(bool)
+    diverged_in_past = xp.zeros(z_array.shape).astype(bool)
     
     """
     for h in tqdm(range(h_range)):
@@ -52,7 +59,7 @@ def julia_set(h_range, w_range, max_iterations,a = -0.744 + 0.148j):
         diverged_in_past = diverged_in_past | diverging_now
         z_array[diverged_in_past] = 0
     
-    return iterations_till_divergence
+    return iterations_till_divergence.get()
 
 def plot_coords_to_img_coords(imsize,xlim,ylim, xp,yp):
         # plot_coords are in the "space" of the plot. img coords are pixels
@@ -70,7 +77,7 @@ def plot_coords_to_img_coords(imsize,xlim,ylim, xp,yp):
         return (int(xi),int(yi))
 
 
-def main(width, height, max_iter=200,record=None):	
+def main(width, height, max_iter=200,record=None, cmap='gist_ncar'):	
     #js = julia_set(500,500,70)
     #js = julia_set(2000,2000,200)
     #plt.imshow(js,cmap='twilight_shifted')
@@ -158,7 +165,7 @@ def main(width, height, max_iter=200,record=None):
         else:
             maxval = np.mean(MAXVAL[-maxval_wsize:])
         
-        bgr = data_to_bgr(js / maxval,cmap='gist_ncar')
+        bgr = data_to_bgr(js / maxval,cmap=cmap)
         cv2.imshow('anomie',bgr)
         cv2.imshow('a',aimg)
         cv2.waitKey(1)
@@ -185,6 +192,7 @@ if __name__ == "__main__":
     parser.add_argument('--record',default=None)
     parser.add_argument('--vignette_sz',default=None,type=float)
     parser.add_argument('--vignette_mix',default=.05,type=float)
+    parser.add_argument('--cmap',default='gist_ncar')
     
     args = parser.parse_args()
-    main(args.width, args.height, record=args.record)
+    main(args.width, args.height, record=args.record,cmap=args.cmap)
