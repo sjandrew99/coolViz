@@ -179,7 +179,8 @@ for icol in range(x.shape[1]):
         iclr = 0
     """
     clr = x.shape[1] + 40
-    frame[yi,xi,:] = clr
+    #frame[yi,xi,:] = clr
+    frame[yi,xi,:] = (0,clr,0)
 
 fname = 'mountains_%d.png' % (time.time())
 cv2.imwrite(fname,frame)
