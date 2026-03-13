@@ -101,13 +101,21 @@ def surround(h,hexMap,img):
         if hexMap[iFound,0]:
             # already drawn
             continue
-        clr = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255)) # yellow-gold
+        #clr = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255)) # yellow-gold
+        clr = getHexColor()
         nextHex.draw(img,facecolor=clr)
         hexMap[iFound,0] = 1
                 
         newhexlist.append(nextHex)
     return newhexlist
-        
+
+def getHexColor():
+    clr1 = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255)) # yellow-gold        
+    clr2 = (np.random.randint(100,200),np.random.randint(40,60),np.random.randint(128,255)) # reddish-purplish
+    if np.random.rand() > 0.5:
+        return clr1
+    else:
+        return clr2
 
 class HexagonalTesselation:
     def __init__(self,org,sz,imsize):
@@ -148,7 +156,8 @@ class HexagonalTesselation:
             hexMap[ip] = 1
             nextHex = Hexagon(org,self.sz)
             #nextHex.draw(img,facecolor=(51,215,255))
-            clr = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255))
+            #clr = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255))
+            clr = getHexColor()
             nextHex.draw(img,facecolor=clr)
             yield
             #cv2.imshow('tesselation',img)
@@ -179,7 +188,8 @@ class HexagonalTesselation:
                 idx = iNotFilled[i]
                 org = self.pts[idx]
                 nextHex = Hexagon(org,self.sz)
-                clr = (np.random.randint(40,60),np.random.randint(200,240),np.random.randint(210,255)) # yellow-gold
+                clr = getHexColor()
+                #(np.random.randint(40,60),np.random.randint(0,240),np.random.randint(210,255)) # yellow-gold
                 nextHex.draw(img,facecolor=clr)
                 hexMap[idx,0] = 1
                 hexlist.append(nextHex)
