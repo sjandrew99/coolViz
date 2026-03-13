@@ -228,10 +228,13 @@ if __name__ == "__main__":
     parser.add_argument('--bloom',action='store_true')
     parser.add_argument('--record',default=None)
     parser.add_argument('--tile_size',default=20,type=int)
+    parser.add_argument('--width',default=800,type=int)
+    parser.add_argument('--height',default=800,type=int)
+    parser.add_argument('--nloops',default=5,type=int)
     
     args = parser.parse_args()
     writer = None
-    imsize = (800,800)
+    imsize = (args.width,args.height)
     if args.record:
         writer = cv2.VideoWriter(args.record,cv2.VideoWriter_fourcc('M','P','4','V'),30,imsize)
     
@@ -261,28 +264,30 @@ if __name__ == "__main__":
     pts = tesselation.pts
     
     if args.straight:
-        img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
-        for frame in tesselation.raster(img):
+        for loop in range(args.nloops):
+            img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
+            for frame in tesselation.raster(img):
+                if writer:
+                    writer.write(img)
+                cv2.imshow('tesselation',img)
+                cv2.waitKey(1)
             if writer:
-                writer.write(img)
+                 writer.write(img)
             cv2.imshow('tesselation',img)
-            cv2.waitKey(1)
-        if writer:
-             writer.write(img)
-        cv2.imshow('tesselation',img)
-        cv2.waitKey(1000)
+            cv2.waitKey(1000)
     
     if args.random:
-        img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
-        for frame in tesselation.random_emplace(img):
+        for loop in range(args.nloops):
+            img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
+            for frame in tesselation.random_emplace(img):
+                if writer:
+                    writer.write(img)
+                cv2.imshow('tesselation',img)
+                cv2.waitKey(1)
             if writer:
                 writer.write(img)
             cv2.imshow('tesselation',img)
-            cv2.waitKey(1)
-        if writer:
-            writer.write(img)
-        cv2.imshow('tesselation',img)
-        cv2.waitKey(1000)
+            cv2.waitKey(1000)
     
         
     
@@ -325,17 +330,18 @@ if __name__ == "__main__":
     
     # "blooming":
     if args.bloom:
-        img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
-        for iframe in tesselation.bloom(img):
-            delay = 20 if iframe else 20
+        for loop in range(args.nloops):
+            img = np.zeros((imsize[1],imsize[0],3),dtype=np.uint8)
+            for iframe in tesselation.bloom(img):
+                delay = 20 if iframe else 20
+                if writer:
+                    writer.write(img)
+                cv2.imshow('tesselation',img)
+                cv2.waitKey(delay)
             if writer:
                 writer.write(img)
             cv2.imshow('tesselation',img)
-            cv2.waitKey(delay)
-        if writer:
-            writer.write(img)
-        cv2.imshow('tesselation',img)
-        cv2.waitKey(1000)                    
+            cv2.waitKey(1000)                    
     """
     hexMap = np.zeros((len(pts),3))
     for i in range(0,len(pts)):
