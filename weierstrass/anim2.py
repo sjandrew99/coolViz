@@ -70,112 +70,140 @@ def get_frame_and_background(da_, db_, terms_):
     frame = background + frame
     return frame
 
+frameIdx = 0
 def imshow(frame,delay):
+    global frameIdx
+    frameIdx += 1
     cv2.imshow('img',frame)
     cv2.waitKey(delay)
+    if args.record:
+        writer.write(frame)
 
 # da: theta resolution
 # db: radial resolution    
 
-delay = 10
-
-dr = 'precomp'
-files = [i for i in os.listdir(dr) if i.endswith('.pkl')]
-files.sort()
-frame = pickleLoad(dr + '/' + files[0])
-imsize = (frame.shape[1],frame.shape[0])
-DA = np.array([float(i.split('_')[4]) for i in files])
-DB = np.array([float(i.split('_')[6]) for i in files])
-TERMS = np.array([int(i.split('_')[8]) for i in files])
-
-uterms = np.unique(TERMS)
-pscale = ParamStepperDesigner(.5, 1.8, 200, 'scale')
-ptheta = ParamStepperDesigner(0,360, 3600, 'theta',waveform='upramp')
-pdx = ParamStepperDesigner(10,200,190,'dx')
-pdy = ParamStepperDesigner(10,200,190,'dy')
-pterms = ParamStepperDesigner(np.min(uterms),np.max(uterms),len(uterms),'terms')
-pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.params,'terms':uterms}
-# different da/db lists for each term
-for t in uterms:
-    #import pdb; pdb.set_trace()
-    idx = np.nonzero(TERMS == t)[0]
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    #parser.add_argument('--width',type=int,default=800)
+    #parser.add_argument('--height',type=int,default=800)
+    #parser.add_argument('--nloops',type=int,default=5)
+    parser.add_argument('--record',default=None)
+    parser.add_argument('--precomp_dir',required=True)
+    #parser.add_argument('--vignette_sz',default=None,type=float)
+    #parser.add_argument('--vignette_mix',default=.05,type=float)
+    #parser.add_argument('--cmap',default='gist_ncar')
     
-    da_ = np.sort(np.unique(DA[idx])) 
-    db_ = np.sort(np.unique(DB[idx])) # note - a and b may not have these values at the same times!
-    aname=f'da_terms_{t}'
-    bname=f'db_terms_{t}'
-    pdict[aname] = ParamStepperDesigner(da_, name=aname).params
-    pdict[bname] = ParamStepperDesigner(db_, name=bname).params
-params = ParamStepper(pdict)
-
-terms_ = params.update('terms')
-aname = f'da_terms_{terms_}'
-bname = f'db_terms_{terms_}'
-da_ = params.update(aname)
-db_ = params.update(bname)
-
-while 1:
+    args = parser.parse_args()
     
-    # min a, min b. highest res
+    delay = 1
+
+    #dr = 'precomp'
+    dr = args.precomp_dir
+    files = [i for i in os.listdir(dr) if i.endswith('.pkl')]
+    files.sort()
+    frame = pickleLoad(dr + '/' + files[0])
+    imsize = (frame.shape[1],frame.shape[0])
+    if args.record:
+        writer = cv2.VideoWriter(args.record, cv2.VideoWriter_fourcc('M','P','4','V'), 30.0, imsize)
+
+    DA = np.array([float(i.split('_')[4]) for i in files])
+    DB = np.array([float(i.split('_')[6]) for i in files])
+    TERMS = np.array([int(i.split('_')[8]) for i in files])
+
+    uterms = np.unique(TERMS)
+    pscale = ParamStepperDesigner(.5, 1.8, 200, 'scale')
+    ptheta = ParamStepperDesigner(0,360, 3600, 'theta',waveform='upramp')
+    pdx = ParamStepperDesigner(10,200,190,'dx')
+    pdy = ParamStepperDesigner(10,200,190,'dy')
+    pterms = ParamStepperDesigner(np.min(uterms),np.max(uterms),len(uterms),'terms')
+    pdict = {'scale':pscale.params, 'theta':ptheta.params,'dx':pdx.params,'dy':pdy.params,'terms':uterms}
+    # different da/db lists for each term
+    for t in uterms:
+        #import pdb; pdb.set_trace()
+        idx = np.nonzero(TERMS == t)[0]
+        
+        da_ = np.sort(np.unique(DA[idx])) 
+        db_ = np.sort(np.unique(DB[idx])) # note - a and b may not have these values at the same times!
+        aname=f'da_terms_{t}'
+        bname=f'db_terms_{t}'
+        pdict[aname] = ParamStepperDesigner(da_, name=aname).params
+        pdict[bname] = ParamStepperDesigner(db_, name=bname).params
+    params = ParamStepper(pdict)
+
+    terms_ = params.update('terms')
     aname = f'da_terms_{terms_}'
     bname = f'db_terms_{terms_}'
-    while 1:
-        if da_ == np.max(params.params[aname]): break
-        iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
-        if not(db_ in DB[iThisRow]):
-            db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
-        frame = get_frame_and_background(da_,db_,terms_)
-        imshow(frame,delay)
-        da_ = params.update(aname)
-    # max a, min b.
-    while 1:
-        if db_ == np.max(params.params[bname]): break
-        iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
-        if not(da_ in DA[iThisRow]):
-            da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
-        frame = get_frame_and_background(da_,db_,terms_)
-        imshow(frame,delay)
-        db_ = params.update(bname)
+    da_ = params.update(aname)
+    db_ = params.update(bname)
 
-    # max a, max b. lowest res
-    lastframe = get_frame(da_,db_,terms_)
-    terms_ = params.update('terms')
-    
-    #da_ = params.update(aname)
-    #db_ = params.update(bname)
-    
-    newframe = get_frame(da_,db_,terms_)
-    #print(f'turnaround, terms = {viewer.terms[viewer.iFile]}')
-    
-    # interpolate between frame and newframe:
-    lastframe = lastframe.astype(np.float32) # use floating point for increased dynamic range and resolution
-    dframe = newframe.astype(np.float32) - lastframe
-    nSteps = 50
-    dpx = dframe / nSteps
-    for step in range(0, nSteps):
-        frame = (lastframe + dpx*(step+1)).astype(np.uint8)
-        frame = rotate(frame, params.update('theta'), params.update('scale')); # TODO - continue rotate/scale throughout interp 
-        background = gen_grid_background(params.update('dx'),params.update('dy'))
-        frame = background + frame
-        imshow(frame,delay)
-    #print('done interpolating')
-    # back to highest res for loop
+        
     while 1:
-        if da_ == np.min(params.params[aname]): break
-        iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
-        if not(db_ in DB[iThisRow]):
-            db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
-        frame = get_frame_and_background(da_,db_,terms_)
-        imshow(frame,delay)
-        da_ = params.update(aname)
-    while 1:
-        if db_ == np.min(params.params[bname]): break
-        iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
-        if not(da_ in DA[iThisRow]):
-            da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
-        frame = get_frame_and_background(da_,db_,terms_)
-        imshow(frame,delay)
-        db_ = params.update(bname)    
-    # min a, max b, min terms
-    # min a, min b, min terms
+        
+        # min a, min b. highest res
+        aname = f'da_terms_{terms_}'
+        bname = f'db_terms_{terms_}'
+        while 1:
+            if da_ == np.max(params.params[aname]): break
+            iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
+            if not(db_ in DB[iThisRow]):
+                db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
+            frame = get_frame_and_background(da_,db_,terms_)
+            imshow(frame,delay)
+            da_ = params.update(aname)
+        # max a, min b.
+        while 1:
+            if db_ == np.max(params.params[bname]): break
+            iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
+            if not(da_ in DA[iThisRow]):
+                da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
+            frame = get_frame_and_background(da_,db_,terms_)
+            imshow(frame,delay)
+            db_ = params.update(bname)
 
+        # max a, max b. lowest res
+        lastframe = get_frame(da_,db_,terms_)
+        terms_ = params.update('terms')
+        
+        #da_ = params.update(aname)
+        #db_ = params.update(bname)
+        
+        newframe = get_frame(da_,db_,terms_)
+        #print(f'turnaround, terms = {viewer.terms[viewer.iFile]}')
+        
+        # interpolate between frame and newframe:
+        lastframe = lastframe.astype(np.float32) # use floating point for increased dynamic range and resolution
+        dframe = newframe.astype(np.float32) - lastframe
+        nSteps = 50
+        dpx = dframe / nSteps
+        for step in range(0, nSteps):
+            frame = (lastframe + dpx*(step+1)).astype(np.uint8)
+            frame = rotate(frame, params.update('theta'), params.update('scale')); # TODO - continue rotate/scale throughout interp 
+            background = gen_grid_background(params.update('dx'),params.update('dy'))
+            frame = background + frame
+            imshow(frame,delay)
+        #print('done interpolating')
+        # back to highest res for loop
+        while 1:
+            if da_ == np.min(params.params[aname]): break
+            iThisRow = np.nonzero((terms_ == TERMS)*(da_ == DA))
+            if not(db_ in DB[iThisRow]):
+                db_ = DB[iThisRow][np.argmin(np.abs(DB[iThisRow] - db_))]
+            frame = get_frame_and_background(da_,db_,terms_)
+            imshow(frame,delay)
+            da_ = params.update(aname)
+        while 1:
+            if db_ == np.min(params.params[bname]): break
+            iThisRow = np.nonzero((terms_ == TERMS)*(db_ == DB))
+            if not(da_ in DA[iThisRow]):
+                da_ = DA[iThisRow][np.argmin(np.abs(DA[iThisRow] - da_))]
+            frame = get_frame_and_background(da_,db_,terms_)
+            imshow(frame,delay)
+            db_ = params.update(bname)    
+        # min a, max b, min terms
+        # min a, min b, min terms
+        if frameIdx > 10000:
+            break
+        
+    if args.record:
+        writer.release()

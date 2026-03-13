@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
 import numpy as np
+#try:
+#    import cupy as xp
+#    using_cuda = 1
+#except:
+#    using_cuda = 0
+
 import cv2
 from tqdm import tqdm
 from timeit import default_timer as timer
@@ -47,14 +53,16 @@ def scalar_data_to_bgr(data):
     return bgr
 
 
-imsize = (900, 800)
+#imsize = (900, 800)
 
 
 
 # q = exp(-j*2*pi*tau)
 
 def get_weierstrass_invariant(da,db, terms, k, dw):
-    precomp_file = 'precomp/__weierstrass_da_%.05f_db_%.05f_terms_%03d_k_%02d_dw_%.03f_imsize_%d_%d.pkl' % (da, db, terms, k, dw, imsize[0],imsize[1])
+    precomp_dir = 'precomp/%dx%d' % (imsize[0],imsize[1])
+    os.makedirs(precomp_dir,exist_ok=True) 
+    precomp_file = precomp_dir + '/__weierstrass_da_%.05f_db_%.05f_terms_%03d_k_%02d_dw_%.03f_imsize_%d_%d.pkl' % (da, db, terms, k, dw, imsize[0],imsize[1])
     if os.path.exists(precomp_file):
         with open(precomp_file,'rb') as fp:
             img = pickle.load(fp)
@@ -105,39 +113,56 @@ def get_weierstrass_invariant(da,db, terms, k, dw):
         tdraw = timer() - st        
 
         print('da: %.05f db: %.05f terms: %03d: k: %02d: dw: %.03f: imsize: %d_%d' % (da, db, terms, k, dw, imsize[0],imsize[1]),end=' ')
-        print('tprecomp: %.1f ms, tcomp: %.1f ms, tnorm: %.1f, tdraw: %.1f' % (tprecomp * 1000, tcomp * 1000, tnorm * 1000, tdraw * 1000))
+        tTotal = tprecomp + tcomp + tnorm + tdraw
+        print('tprecomp: %.1f ms, tcomp: %.1f ms, tnorm: %.1f, tdraw: %.1f, tTotal: %.1f seconds' % (tprecomp * 1000, tcomp * 1000, tnorm * 1000, tdraw * 1000, tTotal))
         with open(precomp_file,'wb') as fp:
             pickle.dump(img,fp)
     return img
 
-# these give a very good picture; takes about 5-10 seconds to compute
-da = .001 # real part of tau
-db = .001 # imag part of tau
-terms = 5 # N/M limits
-k = 3 # calculating G6
-dw = 1.25
-"""
-# much faster, kinda crappy
-da = .01 # real part of tau
-db = .01 # imag part of tau
-terms = 1 # N/M limits
-k = 3 # calculating G6
-dw = 1.25
-"""
-img = get_weierstrass_invariant(da,db,terms,k,dw)
 
-for da in tqdm(np.arange(.0001, .01,.0001)):
-    for db in np.arange(.0001, .01, .0001):
-        for terms in [1,2,3,4,5]:
-            tau_size = (.5/da) * ((1-db)/db) 
-            m_size = 2*terms + 1
-            #total_size = 3 * (tau_size * m_size * m_size) # for tau, m, and n matrices
-            total_size = (tau_size * m_size * m_size) * 8 # 64-bit numbers, tau matrix
-            if (total_size/1e9) > 4: continue # limit to 4Gb, ish
-            img = get_weierstrass_invariant(da,db,terms,k,dw)
+if __name__=="__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--width',type=int,default=800)
+    parser.add_argument('--height',type=int,default=800)
+    #parser.add_argument('--nloops',type=int,default=5)
+    #parser.add_argument('--record',default=None)
+    #parser.add_argument('--precomp_dir',required=True)
+    #parser.add_argument('--vignette_sz',default=None,type=float)
+    #parser.add_argument('--vignette_mix',default=.05,type=float)
+    #parser.add_argument('--cmap',default='gist_ncar')
+    
+    args = parser.parse_args()
+    imsize = (args.width, args.height) 
 
-cv2.imshow('real(G6)',img)
-cv2.waitKey(0)
+    # these give a very good picture; takes about 5-10 seconds to compute
+    da = .001 # real part of tau
+    db = .001 # imag part of tau
+    terms = 5 # N/M limits
+    k = 3 # calculating G6
+    dw = 1.25
+    """
+    # much faster, kinda crappy
+    da = .01 # real part of tau
+    db = .01 # imag part of tau
+    terms = 1 # N/M limits
+    k = 3 # calculating G6
+    dw = 1.25
+    """
+    img = get_weierstrass_invariant(da,db,terms,k,dw)
+
+    for da in tqdm(np.arange(.0001, .01,.0001)):
+        for db in np.arange(.0001, .01, .0001):
+            for terms in [1,2,3,4,5]:
+                tau_size = (.5/da) * ((1-db)/db) 
+                m_size = 2*terms + 1
+                #total_size = 3 * (tau_size * m_size * m_size) # for tau, m, and n matrices
+                total_size = (tau_size * m_size * m_size) * 8 # 64-bit numbers, tau matrix
+                if (total_size/1e9) > 4: continue # limit to 4Gb, ish
+                img = get_weierstrass_invariant(da,db,terms,k,dw)
+
+    cv2.imshow('real(G6)',img)
+    cv2.waitKey(0)
 
 """
 import matplotlib.pyplot as plt
