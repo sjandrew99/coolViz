@@ -19,7 +19,10 @@ def render_string(frame, string, colors=None,glyphWidth = 40,glyphHeight = 40,li
         if glyphLeft < left_margin:
             print(f'WARNING - left margin {left_margin} will not accomodate centered string {string}')
     for i in string:
-        clr = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
+        if colors is None:
+            clr = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255)) # random color per letter
+        else:
+            clr = colors
         if i == ' ':
             #pass
             glyphLeft += glyphWidth/2 + spacing
